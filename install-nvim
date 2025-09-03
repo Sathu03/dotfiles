@@ -1,0 +1,22 @@
+#!/bin/sh
+# Compile and install Neovim
+# https://github.com/neovim/neovim
+#
+# Depends: curl fzf git inotify-tools node ripgrep tar tree-sitter-cli
+# Makedepends: build-base cmake curl gettext-tiny-dev git
+
+set -eu
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf -- "$tmpdir"' EXIT INT TERM
+cd "$tmpdir"
+
+git clone --depth=1 https://github.com/neovim/neovim .
+
+make CMAKE_BUILD_TYPE=Release \
+	CMAKE_INSTALL_PREFIX="$HOME/.local"
+
+rm -rf ~/.local/lib/nvim \
+	~/.local/share/nvim/runtime
+
+make install

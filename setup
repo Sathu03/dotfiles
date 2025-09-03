@@ -1,0 +1,8 @@
+#!/bin/sh
+
+ln -sf "$PWD/bashrc" "$HOME/.bashrc"
+ln -sf "$PWD/gitconfig" "$HOME/.config/git/config"
+ln -sf "$PWD/init.lua" "$HOME/.config/nvim/init.lua"
+ln -sf "$PWD/inputrc" "$HOME/.inputrc"
+ln -sf "$PWD/profile" "$HOME/.profile"
+ln -sf "$PWD/tmux.conf" "$HOME/.config/tmux.conf"

@@ -318,7 +318,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client then
-      if client.server_capabilities.completionProvider then
+      if client:supports_method("textDocument/complition") then
         -- Enable omnicompletion if language server has completion providing
         -- capabilities. Omnicompletion will by default be set to use it if it
         -- has.

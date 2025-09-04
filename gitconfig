@@ -42,12 +42,6 @@
 [status]
 	showStash = true
 
-; [advice]
-;	statusHints = false
-
-[help]
-	autoCorrect = never
-
 [alias]
 	s = status
 	b = branch -avv

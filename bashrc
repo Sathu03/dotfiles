@@ -34,3 +34,6 @@ alias l='ls -la --color=auto'
 [[ -z $BASH_COMPLETION_VERSINFO &&
 	-r /opt/homebrew/etc/profile.d/bash_completion.sh  ]] &&
 	. /opt/homebrew/etc/profile.d/bash_completion.sh
+
+eval "$(starship init bash)"
+

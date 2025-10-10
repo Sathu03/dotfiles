@@ -1,19 +1,22 @@
 -- ~/.config/nvim/init.lua
 --
--- Simple Neovim v0.12+ config
+-- Simple Nvim v0.12+ config
 --
--- Depends: curl fzf git inotify-tools node ripgrep tar tree-sitter-cli
+-- Depends (Alpine Linux):
+--   curl fzf git inotify-tools node ripgrep tar tree-sitter-cli
 --
 -- Set some environment variables:
 --   export ESCDELAY=0
 --   export VISUAL=nvim
 --   export EDITOR=nvim
 --
--- Remember some commands:
---   :lua vim.pack.update() - Update plugins
---   :MasonToolsUpdate      - Update tools installed with mason
+-- Update plugins:
+--   :lua vim.pack.update()
+--
+-- Install and update tools:
+--   :MasonToolsUpdate
 
--- Byte-compile and cache Lua files (improve startup time).
+-- Byte-compile and cache Lua files (improves startup time).
 vim.loader.enable()
 
 -- ==========================================
@@ -22,10 +25,13 @@ vim.loader.enable()
 
 -- Highlight trailing whitespace.
 vim.fn.matchadd("TrailingWhitespace", "\\s\\+$")
-vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "Gray", ctermbg = 8 })
+vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "DarkRed" })
 
--- Disable background color.
-vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
+-- To use dark gray instead:
+--vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "NvimDarkGray3" })
+
+-- To disable background color:
+--vim.api.nvim_set_hl(0, "Normal", { bg = "NONE" })
 
 -- ==========================================
 -- == Options
@@ -34,8 +40,6 @@ vim.api.nvim_set_hl(0, "Normal", { bg = "NONE", ctermbg = "NONE" })
 -- Mapleaders.
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
-
-vim.o.termguicolors = true
 
 -- Don't show banner in netrw file explorer, and preview files right side
 -- vertically.
@@ -54,11 +58,11 @@ vim.o.signcolumn = "yes:1"
 vim.o.splitright = true
 vim.o.splitbelow = true
 
--- Enable autocompletion and scan current buffer, buffer from other windows,
--- loaded buffers for content. Also enable fuzzycompletion and limit completion
--- menu height.
+-- Enable autocompletion and scan current buffer, buffer from other windows, and
+-- loaded buffers for content (but limit latter to 20 matches). Also enable
+-- fuzzycompletion and the height of the limit completion menu popup.
 vim.o.autocomplete = true
-vim.o.complete = ".,w,b"
+vim.o.complete = ".,w,b^20"
 vim.o.completeopt = "fuzzy,menuone,noselect"
 vim.o.pumheight = 10
 vim.o.wildoptions = "fuzzy,tagfile"
@@ -110,16 +114,17 @@ vim.diagnostic.config({
 -- == Custom commands
 -- ==========================================
 
--- Fuzzyfiles.
+-- Fuzzyfinder.
+-- Open a file fuzzy finder in a terminal split window, using fzf.
 vim.api.nvim_create_user_command("FzfFind", function()
   vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, {
     split = "below",
   })
-  vim.fn.jobstart({ "fzf", "--reverse", "--no-unicode" }, {
+  vim.fn.jobstart({ "fzf", "--reverse" }, {
     on_exit = function()
       local fname = vim.api.nvim_buf_get_lines(0, 0, 1, true)[1]
       vim.api.nvim_buf_delete(0, { force = true })
-      if vim.uv.fs_access(fname, "R") then
+      if fname ~= "" then
         vim.cmd.edit(vim.fn.fnameescape(fname))
       end
     end,
@@ -128,7 +133,8 @@ vim.api.nvim_create_user_command("FzfFind", function()
   vim.cmd.startinsert()
 end, {})
 
--- Livegrep.
+-- Livegrepper.
+-- Open a live grepper in a terminal split window, using fzf and ripgrep.
 vim.api.nvim_create_user_command("FzfGrep", function()
   vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, {
     split = "below",
@@ -139,25 +145,17 @@ vim.api.nvim_create_user_command("FzfGrep", function()
     "--ansi",
     "--disabled",
     "--reverse",
-    "--no-unicode",
     "--bind=change:reload:" .. rg .. " {q} || true",
   }, {
     env = { FZF_DEFAULT_COMMAND = rg .. " ''" },
     on_exit = function()
-      local res = vim.split(
-        vim.api.nvim_buf_get_lines(0, 0, 1, true)[1],
-        ":",
-        { plain = true }
-      )
+      local fname, lnum, col = vim.api
+        .nvim_buf_get_lines(0, 0, 1, true)[1]
+        :match("^(.+):(%d+):(%d+):.*$")
       vim.api.nvim_buf_delete(0, { force = true })
-
-      local fname = res[1]
-      local lnum = tonumber(res[2])
-      local cnum = tonumber(res[3])
-
-      if vim.uv.fs_access(fname, "R") then
+      if fname then
         vim.cmd.edit(vim.fn.fnameescape(fname))
-        vim.api.nvim_win_set_cursor(0, { lnum, cnum - 1 })
+        vim.api.nvim_win_set_cursor(0, { tonumber(lnum), tonumber(col) - 1 })
       end
     end,
     term = true,
@@ -202,6 +200,7 @@ vim.keymap.set({ "n", "x" }, "gq", "m'gq")
 vim.keymap.set({ "n", "x" }, "=", "m'=")
 
 -- Navigate quickfix-list with C-j and C-k.
+-- Also see `:h make_makeprg`.
 vim.keymap.set("n", "<C-j>", "<Cmd>cnext<CR>zz")
 vim.keymap.set("n", "<C-k>", "<Cmd>cprev<CR>zz")
 
@@ -215,7 +214,7 @@ vim.keymap.set("n", "<C-w>z", "<Cmd>vertical resize | resize<CR>")
 vim.keymap.set("n", "<C-w><C-z>", "<Cmd>vertical resize | resize<CR>")
 
 -- Toggle the undotree window.
-vim.keymap.set("n", "<Leader>u", "<Cmd>UndotreeToggle<CR>")
+vim.keymap.set("n", "<Leader>u", "<Cmd>Undotree<CR>")
 
 -- Toggle showing diagnostics in all buffers.
 vim.keymap.set("n", "<leader>d", function()
@@ -263,6 +262,15 @@ vim.api.nvim_create_autocmd("BufWinEnter", {
   end,
 })
 
+-- Resize splits if window got resized.
+vim.api.nvim_create_autocmd("VimResized", {
+  callback = function()
+    local ctab = vim.fn.tabpagenr()
+    vim.cmd.tabdo("wincmd =")
+    vim.cmd.tabnext(ctab)
+  end,
+})
+
 -- Create parent directories when saving a file.
 vim.api.nvim_create_autocmd("BufWritePre", {
   callback = function(ev)
@@ -284,7 +292,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- Disable diagnostics when entering insert mode.
 vim.api.nvim_create_autocmd("ModeChanged", {
-  pattern = { "*:i" },
+  pattern = "*:i",
   callback = function()
     vim.diagnostic.enable(false, { bufnr = 0 })
   end,
@@ -318,27 +326,34 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client then
-      if client:supports_method("textDocument/complition") then
+      -- Disable some annoying LSP features.
+      vim.lsp.semantic_tokens.enable(false)
+      vim.lsp.inlay_hint.enable(false)
+      vim.lsp.document_color.enable(false)
+
+      if client:supports_method("textDocument/completion") then
         -- Enable omnicompletion if language server has completion providing
         -- capabilities. Omnicompletion will by default be set to use it if it
         -- has.
-        -- TODO: When https://github.com/neovim/neovim/pull/35346
-        -- if not vim.bo.complete:find("o", 1, true) then
-        --   vim.bo.complete = "o," .. vim.bo.complete
-        -- end
         vim.bo.complete = "o"
+
+        -- TODO: When https://github.com/neovim/neovim/pull/35346, you can do
+        -- the following instead:
+        --if not vim.bo.complete:find("o", 1, true) then
+        --  vim.bo.complete = "o," .. vim.bo.complete
+        --end
 
         -- Likewise enable some better LSP completion capabilities.
         vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
           -- Optional formating of LSP completion items.
           convert = function(item)
-            -- Remove leading misc chars (bullets etc.), and cap field to label to
-            -- 25 chars. Also drop showing menu, which often shows return type or
-            -- similar.
-            local abbr = item.label:match("[%w_.]+.*") or item.label
+            -- Cap field labels to 15 characters, and don't show content in ()
+            -- and {}.
+            local label = item.label:gsub("%b()", ""):gsub("%b{}", "")
+            local detail = item.detail or ""
             return {
-              abbr = #abbr > 25 and abbr:sub(1, 24) .. "…" or abbr,
-              menu = "",
+              abbr = #label > 15 and label:sub(1, 14) .. "…" or label,
+              menu = #detail > 15 and detail:sub(1, 14) .. "…" or detail,
             }
           end,
         })
@@ -362,12 +377,18 @@ vim.pack.add({
   "https://github.com/WhoIsSethDaniel/mason-tool-installer",
   "https://github.com/stevearc/conform.nvim",
   "https://github.com/mfussenegger/nvim-lint",
-  "https://github.com/mbbill/undotree",
 }, { confirm = false })
+
+-- Builtin plugins
+-- Some builtin plugins that are shipped with nvim.
+-- ==========================================
+vim.cmd.packadd({ "cfilter", bang = true })
+vim.cmd.packadd({ "nvim.undotree", bang = true })
 
 -- Plugin: nvim-treesitter
 -- Install up-to-date tree sitter parsers. See its documentation for available
 -- parsers.
+-- ==========================================
 require("nvim-treesitter").install({
   -- Bundled parsers.
   "c",
@@ -421,10 +442,14 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Plugin: mason.nvim
 -- A package manager for editor related applications like LSPs, formatters and
 -- linters.
+-- ==========================================
+
 require("mason").setup()
 
 -- Plugin: mason-tool-installer
 -- A wrapper around mason to autoinstall packages by listing them in a table.
+-- ==========================================
+
 require("mason-tool-installer").setup({
   run_on_start = false,
   ensure_installed = {
@@ -444,6 +469,8 @@ require("mason-tool-installer").setup({
 -- Plugin: conform.nvim
 -- Enable specific formatters per filetype. See its documentation for available
 -- formatters.
+-- ==========================================
+
 require("conform").setup({
   -- Map formatters to filetypes.
   formatters_by_ft = {
@@ -455,7 +482,7 @@ require("conform").setup({
     sql = { "sqruff" },
     vhdl = { "vsg" },
     -- https://github.com/stevearc/conform.nvim/issues/752
-    -- ["*"] = { "injected" },
+    --["*"] = { "injected" },
   },
 })
 
@@ -466,6 +493,8 @@ vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
 -- Plugin: nvim-lint
 -- A plugin to enable specific linters per filetype. See its documentation for
 -- available linters.
+-- ==========================================
+
 local lint = require("lint")
 
 -- Map linters to filetypes.
@@ -479,8 +508,8 @@ lint.linters_by_ft = {
 -- making it faster.
 lint.linters.shellcheck.args = { "-f", "json1", "-" }
 
--- Append the `-Wall` flag to ghdl, by extending its `args` field.
-vim.list_extend(lint.linters.ghdl.args, { "-Wall" })
+-- Append `-Wall` to the ghdl.
+table.insert(lint.linters.ghdl.args, "-Wall")
 
 -- Enable the linting on these events.
 vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "TextChanged" }, {

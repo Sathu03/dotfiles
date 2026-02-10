@@ -1,22 +1,43 @@
 # ~/.inputrc
 
+# Use vi-style editing instead of emacs.
 set editing-mode vi
+
+# Unicode support - enable 8-bit character input/output.
 set input-meta on
 set output-meta on
 set convert-meta off
+
+# Reduce delay when pressing ESC in vi mode.
 set keyseq-timeout 1
+
+# Add trailing slash to symlinked directories in completions.
 set mark-symlinked-directories on
+
+# Show completions immediately without prompting.
 set completion-query-items -1
-set completion-ignore-case on
-set menu-complete-display-prefix on
-set page-completions off
 set show-all-if-ambiguous on
 set show-all-if-unmodified on
+
+# Completion behavior improvements.
+set completion-ignore-case on
+set menu-complete-display-prefix on
 set skip-completed-text on
 
+# Don't pager completions.
+set page-completions off
+
+# Vi mode specific keybindings.
 $if mode=vi
+	# When in vi insert mode...
 	set keymap vi-insert
+
+	# Cycle completions with Tab.
 	"\t": menu-complete
+
+	# Cycle completions backwards with Shift-Tab.
 	"\e[Z": menu-complete-backward
+
+	# Clear screen with Ctrl-l.
 	"\C-l": clear-screen
 $endif

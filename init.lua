@@ -1,5 +1,5 @@
 -- ~/.config/nvim/init.lua
---
+print("Hello nvim")
 -- Simple Nvim v0.12+ config
 --
 -- Depends (Alpine Linux):
@@ -517,3 +517,20 @@ vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "TextChanged" }, {
     lint.try_lint(nil, { ignore_errors = true })
   end,
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

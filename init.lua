@@ -41,6 +41,9 @@ vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "DarkRed" })
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+--use system clipboard always
+--vim.o.clipboard = "unnamedplus"
+
 -- Don't show banner in netrw file explorer, and preview files right side
 -- vertically.
 vim.g.netrw_banner = 0

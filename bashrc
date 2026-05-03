@@ -76,3 +76,6 @@ diff() {
 [[ -z $BASH_COMPLETION_VERSINFO &&
 	-r "$(brew --prefix)/etc/profile.d/bash_completion.sh" ]] &&
 	. "$(brew --prefix)/etc/profile.d/bash_completion.sh"
+
+# opencode
+export PATH=/Users/sathu.s/.opencode/bin:$PATH

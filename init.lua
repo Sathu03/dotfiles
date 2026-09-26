@@ -19,7 +19,6 @@ print("Hello nvim")
 -- Byte-compile and cache Lua files (improves startup time).
 vim.loader.enable()
 
-
 -- ==========================================
 -- == Coloring
 -- ==========================================
@@ -50,9 +49,6 @@ vim.g.maplocalleader = "\\"
 vim.g.netrw_banner = 0
 vim.g.netrw_preview = 1
 vim.g.netrw_alto = 0
-
--- Use C instead of C++ syntax for *.h files.
-vim.g.c_syntax_for_h = true
 
 -- Enable line numbers and signcolumn, and limit signcolumn to one sign.
 vim.o.number = true

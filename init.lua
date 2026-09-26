@@ -19,6 +19,7 @@ print("Hello nvim")
 -- Byte-compile and cache Lua files (improves startup time).
 vim.loader.enable()
 
+
 -- ==========================================
 -- == Coloring
 -- ==========================================
@@ -61,12 +62,7 @@ vim.o.signcolumn = "yes:1"
 vim.o.splitright = true
 vim.o.splitbelow = true
 
--- Enable autocompletion and scan current buffer, buffer from other windows, and
--- loaded buffers for content (but limit latter to 20 matches). Also enable
--- fuzzycompletion and the height of the limit completion menu popup.
-vim.o.autocomplete = true
-vim.o.complete = ".,w,b^20"
-vim.o.completeopt = "fuzzy,menuone,noselect"
+--
 vim.o.pumheight = 10
 vim.o.wildoptions = "fuzzy,tagfile"
 
@@ -329,38 +325,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client then
-      -- Disable some annoying LSP features.
       vim.lsp.semantic_tokens.enable(false)
       vim.lsp.inlay_hint.enable(false)
       vim.lsp.document_color.enable(false)
-
-      if client:supports_method("textDocument/completion") then
-        -- Enable omnicompletion if language server has completion providing
-        -- capabilities. Omnicompletion will by default be set to use it if it
-        -- has.
-        vim.bo.complete = "o"
-
-        -- TODO: When https://github.com/neovim/neovim/pull/35346, you can do
-        -- the following instead:
-        --if not vim.bo.complete:find("o", 1, true) then
-        --  vim.bo.complete = "o," .. vim.bo.complete
-        --end
-
-        -- Likewise enable some better LSP completion capabilities.
-        vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, {
-          -- Optional formating of LSP completion items.
-          convert = function(item)
-            -- Cap field labels to 15 characters, and don't show content in ()
-            -- and {}.
-            local label = item.label:gsub("%b()", ""):gsub("%b{}", "")
-            local detail = item.detail or ""
-            return {
-              abbr = #label > 15 and label:sub(1, 14) .. "…" or label,
-              menu = #detail > 15 and detail:sub(1, 14) .. "…" or detail,
-            }
-          end,
-        })
-      end
     end
   end,
 })
@@ -380,7 +347,65 @@ vim.pack.add({
   "https://github.com/WhoIsSethDaniel/mason-tool-installer",
   "https://github.com/stevearc/conform.nvim",
   "https://github.com/mfussenegger/nvim-lint",
+  "https://github.com/lervag/vimtex",
+
+  {
+    src = "https://github.com/saghen/blink.cmp",
+    version = "v1.10.2",
+  },
 }, { confirm = false })
+
+
+-- ==========================================
+-- == VimTeX
+-- ==========================================
+
+vim.g.vimtex_view_method = "skim"
+
+vim.g.vimtex_compiler_method = "latexmk"
+
+vim.g.vimtex_compiler_latexmk = {
+  build_dir = "build",
+  callback = 1,
+  continuous = 1,
+  executable = "latexmk",
+  options = {
+    "-pdf",
+    "-interaction=nonstopmode",
+    "-synctex=1",
+  },
+}
+
+vim.g.vimtex_quickfix_mode = 2
+vim.g.vimtex_mappings_enabled = 1
+
+
+
+require("blink.cmp").setup({
+  keymap = {
+    preset = "default",
+  },
+
+  appearance = {
+    nerd_font_variant = "mono",
+  },
+
+  completion = {
+    documentation = {
+      auto_show = true,
+    },
+  },
+
+  sources = {
+    default = { "lsp", "path", "buffer" },
+  },
+
+  fuzzy = {
+    implementation = "prefer_rust_with_warning",
+  },
+})
+
+
 
 -- Builtin plugins
 -- Some builtin plugins that are shipped with nvim.
@@ -520,6 +545,7 @@ vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "TextChanged" }, {
     lint.try_lint(nil, { ignore_errors = true })
   end,
 })
+
 
 
 

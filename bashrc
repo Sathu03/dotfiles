@@ -6,7 +6,14 @@ export LC_COLLATE=C
 # Return early if not running in interactive mode.
 [[ $- != *i* ]] && return
 
+# Ghostty shell integration
+if [ -n "${GHOSTTY_RESOURCES_DIR}" ]; then
+    builtin source "${GHOSTTY_RESOURCES_DIR}/shell-integration/bash/ghostty.bash"
+fi
+
+eval "$(starship init bash)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
 
 # Prepend ~/bin, ~/.local/bin and /usr/local/bin to PATH.
 export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
@@ -79,3 +86,6 @@ diff() {
 
 # opencode
 export PATH=/Users/sathu.s/.opencode/bin:$PATH
+
+# opencode
+export PATH=/Users/sathu_sk/.opencode/bin:$PATH

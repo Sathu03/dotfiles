@@ -4,48 +4,88 @@
 	name = Sathusan Sivasuthan
 	email = sathu052003@gmail.com
 
+[sendemail]
+	; Open editor to review/annotate each patch email before
+	; sending.
+	; For more info about sending emails with git, see
+	; https://git-send-email.io/
+	annotate = yes
+
 [init]
+	; Set default branch name to master to make `git init` stop
+	; complaining.
 	defaultBranch = master
 
 [commit]
+	; Show diff in commit message editor for context.
 	verbose = true
 
+[format]
+	; Include the base commit ID in format-patch output.
+	useAutoBase = whenAble
+
 [fetch]
+	; When fetching/pulling, remove remote-tracking branches that no
+	; longer exist, remove local tags that don't exist on remote,
+	; and verify integrity of fetched objects.
 	prune = true
 	pruneTags = true
 	fsckObjects = true
 
 [pull]
+	; Rebase instead of merge when pulling. Maintains more linear
+	; history.
 	rebase = true
 
 [receive]
+	; Prevent corruption of data when receiving (git push).
 	fsckObjects = true
 
 [transfer]
+	; Prevent corruption of data when transfering.
 	fsckObjects = true
 
 [rebase]
+	; Automatically squash commits marked with fixup!/squash!, and
+	; auto-stash uncommitted changes before rebase.
 	autoSquash = true
 	autoStash = true
 
-[merge]
-	conflictStyle = zdiff3
+[difftool "nvim_difftool"]
+	; Add Nvim's builtin plugin difftool as a git difftool
+	; alternative.
+	cmd = nvim -c \"packadd nvim.difftool\" -c \"DiffTool $LOCAL $REMOTE\"
 
 [diff]
+	; Use better diff algorithm, and highlight whitespace errors in
+	; all contexts. Use nvim_difftool for commands like `git
+	; difftool` and `git difftool -d`.
 	algorithm = histogram
 	wsErrorHighlight = all
+	tool = nvim_difftool
+
+[merge]
+	; Show original, ours, and theirs in conflicts for better
+	; contex. Use the nvimdiff merge tool for commands like `git
+	; mergetool`.
+	conflictStyle = zdiff3
+	tool = nvimdiff
 
 [rerere]
+	; Remember how conflicts were resolved, and automatically stage
+	; resolved conflicts.
 	enabled = true
 	autoUpdate = true
 
 [status]
+	; Show stash count in git status output.
 	showStash = true
 
 [alias]
 	s = status
 	b = branch -avv
-	l = log --graph --format='%C(auto)%h%d %s %C(white)(%cr)'
-	ll = l --all
-	lp = log --relative-date --topo-order -p
 	t = log --tags --no-walk --format='%C(auto)%h%d %s %C(white)(%cr)'
+	l = log --format='%C(auto)%h%d %s %C(white)(%cr)'
+	ll = l --graph
+	lp = log --pretty=fuller --relative-date --stat -p
+	llp = lp --topo-order

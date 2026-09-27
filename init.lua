@@ -1,54 +1,118 @@
 -- ~/.config/nvim/init.lua
-print("Hello nvim")
--- Simple Nvim v0.12+ config
+--
+-- Simple Nvim v0.13+ config
 --
 -- Depends (Alpine Linux):
---   curl fzf git inotify-tools node ripgrep tar tree-sitter-cli
+--   curl fzf git ripgrep tree-sitter-cli
+--   (as well as language servers, formatters and linters)
 --
--- Set some environment variables:
+-- Recommended environment variables:
 --   export ESCDELAY=0
 --   export VISUAL=nvim
 --   export EDITOR=nvim
 --
 -- Update plugins:
---   :lua vim.pack.update()
+--   :packupdate
 --
--- Install and update tools:
---   :MasonToolsUpdate
+-- Quick references:
+--   :h quickref
 
--- Byte-compile and cache Lua files (improves startup time).
+-- ===========================================================================
+-- Misc
+
+-- Byte-compile and cache Lua files (improves startup time (supposedly)).
 vim.loader.enable()
 
--- ==========================================
--- == Coloring
--- ==========================================
+-- Replace the builtin message + cmdline presentation layer. Also cap
+-- the pager window to half the screen height. Comment this out if you
+-- experience issues or prefer the older version.
+-- See `:h ui2`.
+require("vim._core.ui2").enable({
+  msg = {
+    pager = {
+      height = 0.5,
+    },
+  },
+})
 
--- Highlight trailing whitespace.
-vim.fn.matchadd("TrailingWhitespace", "\\s\\+$")
+-- ===========================================================================
+-- Coloring
+-- See `:h syntax.txt`.
+
+-- Uncomment to enable a custom colorscheme. You must first create one in
+-- ~/.config/nvim/colors/, or use one of the included ones.
+--vim.cmd.colorscheme("mycolorscheme")
+
+-- Uncomment to remove background color.
+--vim.api.nvim_set_hl(0, "Normal", { bg = "NONE" })
+--vim.api.nvim_set_hl(0, "NormalNC", { bg = "NONE" })
+
+-- Create trailing whitespace highlight.
 vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "DarkRed" })
 
--- To use dark gray instead:
---vim.api.nvim_set_hl(0, "TrailingWhitespace", { bg = "NvimDarkGray3" })
+-- Highligh the above highlight to all normal buffers (excludes terminal
+-- buffers, quickfix list buffers, etc.)
+vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+  callback = function()
+    local id = vim.w.trailing_ws_match
+    if vim.bo.buftype ~= "" then
+      if id then
+        vim.fn.matchdelete(id)
+        vim.w.trailing_ws_match = nil
+      end
+    elseif not id then
+      vim.w.trailing_ws_match = vim.fn.matchadd("TrailingWhitespace", [[\s\+$]])
+    end
+  end,
+})
 
--- To disable background color:
---vim.api.nvim_set_hl(0, "Normal", { bg = "NONE" })
+-- Override the default Todo highlight.
+vim.api.nvim_set_hl(0, "Todo", { fg = "LightRed", bold = true })
 
--- ==========================================
--- == Options
--- ==========================================
+-- Highlight TODOs, FIXMEs, etc. We could install the
+-- tree-sitter-comment parser for more precise handling (not highlight
+-- TODOs outside comments for one), but it is noticeably slow.
+vim.api.nvim_create_autocmd({ "BufEnter", "WinEnter" }, {
+  callback = function()
+    local id = vim.w.todo_match
+    if vim.bo.buftype ~= "" then
+      if id then
+        vim.fn.matchdelete(id)
+        vim.w.todo_match = nil
+      end
+    elseif not id then
+      vim.w.todo_match =
+        vim.fn.matchadd("Todo", [[\<\(TODO\|FIXME\|HACK\|NOTE\|XXX\)\>:\=]])
+    end
+  end,
+})
+
+-- ===========================================================================
+-- Options
+-- See `:h lua-guide-options`.
+
+-- Prevent loading some unneeded modules and plugins.
+vim.g.loaded_netrw = 1
+vim.g.loaded_fzf = 1
+vim.g.loaded_matchit = 1
+vim.g.loaded_matchparen = 1
+vim.g.loaded_remote_plugins = 1
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
 
 -- Mapleaders.
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
---use system clipboard always
+-- Uncomment to always use the system clipboard register.
 --vim.o.clipboard = "unnamedplus"
 
--- Don't show banner in netrw file explorer, and preview files right side
--- vertically.
-vim.g.netrw_banner = 0
-vim.g.netrw_preview = 1
-vim.g.netrw_alto = 0
+-- Enable project-local configuration. Execute any .nvim.lua, .nvimrc,
+-- or .exrc file found in the current-directory and all parent
+-- directories if the files are in the trust list.
+vim.o.exrc = true
 
 -- Enable line numbers and signcolumn, and limit signcolumn to one sign.
 vim.o.number = true
@@ -58,28 +122,35 @@ vim.o.signcolumn = "yes:1"
 vim.o.splitright = true
 vim.o.splitbelow = true
 
---
+-- Enable autocompletion and scan current buffer, buffer from other
+-- windows, and loaded buffers for content (but limit latter to 20
+-- matches). Also enable fuzzycompletion and the height of the limit
+-- completion menu popup.
+--vim.o.autocomplete = true
+--vim.o.complete = ".,w,b^20"
+--vim.o.completeopt = "fuzzy,menuone,noselect"
 vim.o.pumheight = 10
 vim.o.wildoptions = "fuzzy,tagfile"
 
--- Have 'foldexpr' set the fold level, and have all folds be open at start by
--- setting folding level to a high number. 'foldexpr' will be set to use
--- treesitter when available, see further down.
-vim.o.foldmethod = "expr"
-vim.o.foldlevel = 99
+-- Always open buffers with all folds opened.
+vim.o.foldlevelstart = 99
 
--- Use undofiles, disable swapfiles, and autosave files when changing buffers
--- etc.
+-- Use undofiles, disable swapfiles, and autosave files when changing
+-- buffers etc.
 vim.o.undofile = true
 vim.o.swapfile = false
 vim.o.autowrite = true
 
--- Use smarter indentation logic (overridden by treesitter indentation if
--- available), round indent to multiple of shiftwidth, and set shiftwidth to
--- size of tabs. See `:h indent.txt` for more info and indent method priority.
+-- Use smarter indentation logic, round indent to multiple of
+-- shiftwidth, and set shiftwidth to size of tabs. See `:h indent.txt`
+-- for more info and indent method priority.
 vim.o.smartindent = true
 vim.o.shiftround = true
 vim.o.shiftwidth = 0
+
+-- Always have 5 extra lines at the top and bottom and sides.
+vim.o.scrolloff = 5
+vim.o.sidescrolloff = 5
 
 -- Disable key code sequence completion timeout.
 vim.o.timeout = false
@@ -89,15 +160,26 @@ vim.o.ttimeoutlen = 0
 vim.o.ignorecase = true
 vim.o.smartcase = true
 
--- Use smartcase for a number of searching operations.
+-- Uncomment to always use the terminals default cursor shape.
 vim.o.guicursor = ""
-vim.o.mousemodel = "extend"
+
+-- Let nvim set the terminal window title.
+vim.o.title = true
 
 -- Abbreviate some messages.
 vim.o.shortmess = "FIOTlot"
 
--- Enable virtual text diagnostics, disable underlines, sort diagnostics based
--- on severity, and highlight linenumbers to match severity.
+-- Keep the default statusline, but show the file format for non-Unix
+-- files, e.g. "[dos]" or "[mac]", after the filename, as well as the
+-- arglist status.
+vim.o.statusline = vim.o.statusline:gsub("%%<%%f", function(s)
+  return s
+    .. [[%{&fileformat !=# 'unix' ? ' [' . &fileformat . ']' : ''}]]
+    .. [[%a]]
+end, 1)
+
+-- Enable virtual text diagnostics, disable underlines, sort diagnostics
+-- based on severity, and highlight linenumbers to match severity.
 vim.diagnostic.config({
   virtual_text = true,
   underline = false,
@@ -105,20 +187,19 @@ vim.diagnostic.config({
   float = { source = true },
 })
 
--- ==========================================
--- == Custom commands
--- ==========================================
+-- ===========================================================================
+-- Custom commands
+-- See `:h lua-guide-commands`.
 
 -- Fuzzyfinder.
 -- Open a file fuzzy finder in a terminal split window, using fzf.
 vim.api.nvim_create_user_command("FzfFind", function()
-  vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, {
-    split = "below",
-  })
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_open_win(buf, true, { split = "below" })
   vim.fn.jobstart({ "fzf", "--reverse" }, {
     on_exit = function()
-      local fname = vim.api.nvim_buf_get_lines(0, 0, 1, true)[1]
-      vim.api.nvim_buf_delete(0, { force = true })
+      local fname = vim.api.nvim_buf_get_lines(buf, 0, 1, true)[1]
+      vim.api.nvim_buf_delete(buf, { force = true })
       if fname ~= "" then
         vim.cmd.edit(vim.fn.fnameescape(fname))
       end
@@ -129,11 +210,11 @@ vim.api.nvim_create_user_command("FzfFind", function()
 end, {})
 
 -- Livegrepper.
--- Open a live grepper in a terminal split window, using fzf and ripgrep.
+-- Open a live grepper in a terminal split window, using fzf and
+-- ripgrep.
 vim.api.nvim_create_user_command("FzfGrep", function()
-  vim.api.nvim_open_win(vim.api.nvim_create_buf(false, true), true, {
-    split = "below",
-  })
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_open_win(buf, true, { split = "below" })
   local rg = "rg -Suug !.git --column --color=always --"
   vim.fn.jobstart({
     "fzf",
@@ -145,12 +226,15 @@ vim.api.nvim_create_user_command("FzfGrep", function()
     env = { FZF_DEFAULT_COMMAND = rg .. " ''" },
     on_exit = function()
       local fname, lnum, col = vim.api
-        .nvim_buf_get_lines(0, 0, 1, true)[1]
+        .nvim_buf_get_lines(buf, 0, 1, true)[1]
         :match("^(.+):(%d+):(%d+):.*$")
-      vim.api.nvim_buf_delete(0, { force = true })
+      vim.api.nvim_buf_delete(buf, { force = true })
       if fname then
         vim.cmd.edit(vim.fn.fnameescape(fname))
-        vim.api.nvim_win_set_cursor(0, { tonumber(lnum), tonumber(col) - 1 })
+        vim.api.nvim_win_set_cursor(0, {
+          tonumber(lnum),
+          tonumber(col) - 1,
+        })
       end
     end,
     term = true,
@@ -158,9 +242,9 @@ vim.api.nvim_create_user_command("FzfGrep", function()
   vim.cmd.startinsert()
 end, {})
 
--- ==========================================
--- == Mappings
--- ==========================================
+-- ===========================================================================
+-- Mappings
+-- See `:h lua-guide-mappings`.
 
 -- Unmap space.
 vim.keymap.set({ "n", "x" }, "<Space>", "<Nop>")
@@ -169,16 +253,20 @@ vim.keymap.set({ "n", "x" }, "<Space>", "<Nop>")
 vim.keymap.set("n", "<Leader>l", "<Cmd>set list!<CR>")
 
 -- Change current tab's working directory to directory of current file.
-vim.keymap.set("n", "~", "<Cmd>tcd %:h<CR>")
+vim.keymap.set("n", "g~", "<Cmd>tcd %:h<CR>")
 
--- Open a netrw file explorer window.
-vim.keymap.set("n", "-", "<Cmd>Explore<CR>")
+-- When a language server is active, the default K keymap will we
+-- reassigned call vim.lsp.buf.hover(). Instead, get the default
+-- behavior with gK.
+vim.keymap.set("n", "gK", "<Cmd>norm! K<CR>")
 
 -- Open a fuzzy file picker window and livegrep window.
 vim.keymap.set("n", "<Leader>e", "<Cmd>FzfFind<CR>")
 vim.keymap.set("n", "<Leader>/", "<Cmd>FzfGrep<CR>")
+
+-- Shortcuts for :find and :grep.
 vim.keymap.set("n", "<Leader>f", ":find ")
-vim.keymap.set("n", "<Leader>f", ":grep ")
+vim.keymap.set("n", "<Leader>g", ":grep ")
 
 -- Indent and de-indent visually selected text.
 vim.keymap.set("x", "<", "<gv")
@@ -203,10 +291,16 @@ vim.keymap.set("n", "<C-k>", "<Cmd>cprev<CR>zz")
 vim.keymap.set("n", "<M-j>", "<Cmd>lnext<CR>zz")
 vim.keymap.set("n", "<M-k>", "<Cmd>lprev<CR>zz")
 
--- Resize current window to max size with <C-w>z and <C-w><C-z>. To resize all
--- windows to equal size, do <C-w>=.
+-- Resize current window to max size with <C-w>z and <C-w><C-z>. To
+-- resize all windows to equal size, do <C-w>=.
 vim.keymap.set("n", "<C-w>z", "<Cmd>vertical resize | resize<CR>")
 vim.keymap.set("n", "<C-w><C-z>", "<Cmd>vertical resize | resize<CR>")
+
+-- Open a terminal split window with <Leader>t. When in a terminal,
+-- enter normal-mode with <C-w><Esc> or <C-w><C-[>.
+vim.keymap.set("n", "<Leader>t", "<Cmd>horizontal terminal<CR>")
+vim.keymap.set("t", "<C-w><Esc>", "<C-\\><C-n>")
+vim.keymap.set("t", "<C-w>[", "<C-\\><C-n>")
 
 -- Toggle the undotree window.
 vim.keymap.set("n", "<Leader>u", "<Cmd>Undotree<CR>")
@@ -228,20 +322,22 @@ vim.keymap.set("n", "grl", function()
   pcall(vim.cmd.ll)
 end)
 
--- ==========================================
--- == Autocommands
--- ==========================================
+-- ===========================================================================
+-- Autocommands
+-- See `:h lua-guide-autocommands`.
 
--- Always display relative paths.
--- https://github.com/vim/vim/issues/549
-vim.api.nvim_create_autocmd("BufReadPost", {
+-- Disable line numbers and highlight the textline of the cursor in
+-- quickfix-list, location-list, and directory view windows.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "qf", "directory" },
   callback = function()
-    vim.cmd.lcd(".")
+    vim.wo[0][0].number = false
+    vim.wo[0][0].cursorline = true
   end,
 })
 
 -- Clear jumplist on startup.
-vim.api.nvim_create_autocmd({ "VimEnter" }, {
+vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
     vim.cmd.clearjumps()
   end,
@@ -270,42 +366,31 @@ vim.api.nvim_create_autocmd("VimResized", {
 vim.api.nvim_create_autocmd("BufWritePre", {
   callback = function(ev)
     if not ev.file:find("^%w+://") then
-      vim.fn.mkdir(vim.fs.dirname(ev.file), "p")
+      vim.fs.mkdir(vim.fs.dirname(ev.file), { parents = true })
     end
-  end,
-})
-
--- Disable line numbers and highlight the textline of the cursor in
--- quickfix-list and location-list windows.
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "qf",
-  callback = function()
-    vim.wo.number = false
-    vim.wo.cursorline = true
   end,
 })
 
 -- Disable diagnostics when entering insert mode.
 vim.api.nvim_create_autocmd("ModeChanged", {
   pattern = "*:i",
-  callback = function()
-    vim.diagnostic.enable(false, { bufnr = 0 })
+  callback = function(ev)
+    vim.diagnostic.hide(nil, ev.buf)
   end,
 })
 
 -- Enable diagnostics when leaving insert mode.
 vim.api.nvim_create_autocmd("ModeChanged", {
   pattern = "i:*",
-  callback = function()
-    vim.diagnostic.enable(true, { bufnr = 0 })
+  callback = function(ev)
+    vim.diagnostic.show(nil, ev.buf)
   end,
 })
 
--- ==========================================
--- == LSP
--- ==========================================
-
--- See `:h lsp-defaults` for default LSP keymaps and behavior.
+-- ===========================================================================
+-- LSP
+-- See `:h lsp`, and `:h lsp-defaults` for default LSP keymaps and
+-- behavior.
 
 -- Enable some language servers.
 vim.lsp.enable({
@@ -321,6 +406,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(ev)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client then
+      -- Disable some annoying LSP features.
       vim.lsp.semantic_tokens.enable(false)
       vim.lsp.inlay_hint.enable(false)
       vim.lsp.document_color.enable(false)
@@ -328,37 +414,163 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
--- ==========================================
--- == Plugins
--- ==========================================
+-- ===========================================================================
+-- Plugins
+-- See `:h plugins.txt`.
+
+-- Store plugin lockfile at ~/.local/share/nvim/nvim-pack-lock.json. By
+-- default, it is put at ~/.config/nvim/nvim-pack-lock.json.
+vim.o.packlockfile = vim.fn.stdpath("data") .. "/nvim-pack-lock.json"
 
 -- Install some plugins. See `:h vim.pack`.
 vim.pack.add({
   "https://github.com/neovim/nvim-lspconfig",
-  {
-    src = "https://github.com/nvim-treesitter/nvim-treesitter",
-    version = "main",
-  },
-  "https://github.com/mason-org/mason.nvim",
-  "https://github.com/WhoIsSethDaniel/mason-tool-installer",
+  "https://github.com/nvim-treesitter/nvim-treesitter",
+  "https://github.com/monkoose/matchparen.nvim",
   "https://github.com/stevearc/conform.nvim",
   "https://github.com/mfussenegger/nvim-lint",
   "https://github.com/lervag/vimtex",
-
-  {
-    src = "https://github.com/saghen/blink.cmp",
-    version = "v1.10.2",
-  },
+  { src = "https://github.com/saghen/blink.cmp", version = "v1.10.2", },
 }, { confirm = false })
 
+-- ---------------------------------------------------------------------------
+-- Builtin plugins
+-- Some builtin plugins that are shipped with nvim.
+-- See `:h standard-plugin-list`.
 
--- ==========================================
--- == VimTeX
--- ==========================================
+vim.cmd.packadd({ "cfilter", bang = true })
+vim.cmd.packadd({ "nvim.undotree", bang = true })
+vim.cmd.packadd({ "nvim.difftool", bang = true })
+
+-- ---------------------------------------------------------------------------
+-- Plugin: nvim-treesitter
+-- Install up-to-date tree sitter parsers. See its documentation for
+-- available parsers.
+-- See `:h treesitter.txt` and `:h nvim-treesitter.txt`.
+
+require("nvim-treesitter").install({
+  -- Bundled parsers.
+  "c",
+  "diff",
+  "lua",
+  "markdown",
+  "markdown_inline",
+  "query",
+  "vim",
+  "vimdoc",
+  -- Extra parsers.
+  "bash",
+  "git_rebase",
+  "gitcommit",
+  "go",
+  "json",
+  "python",
+  "sql",
+  "vhdl",
+})
+
+-- Run `:TSUpdate` when the nvim-treesitter plugin is install or
+-- updated.
+vim.api.nvim_create_autocmd("PackChanged", {
+  callback = function(ev)
+    if
+      ev.data.spec.name == "nvim-treesitter"
+      and (ev.data.kind == "install" or ev.data.kind == "update")
+    then
+      vim.schedule(function()
+        vim.cmd.TSUpdate()
+      end)
+    end
+  end,
+})
+
+-- Enable treesitter in supported filetypes.
+vim.api.nvim_create_autocmd("FileType", {
+  callback = function(ev)
+    local lang = vim.treesitter.language.get_lang(ev.match)
+    if not lang or not vim.treesitter.language.add(lang) then
+      return
+    end
+
+    vim.treesitter.start(ev.buf, lang)
+
+    if vim.treesitter.query.get(lang, "folds") then
+      vim.wo[0][0].foldexpr = vim.treesitter.foldexpr
+      vim.wo[0][0].foldmethod = "expr"
+    end
+  end,
+})
+
+-- ---------------------------------------------------------------------------
+-- Plugin: matchparen.nvim
+-- Until https://github.com/neovim/neovim/issues/39683 is addressed.
+-- See `:h matchparen.nvim`.
+
+require("matchparen").setup()
+
+-- ---------------------------------------------------------------------------
+-- Plugin: conform.nvim
+-- Enable specific formatters per filetype. See its documentation for
+-- available formatters.
+-- See `:h conform.txt`.
+
+require("conform").setup({
+  -- Map formatters to filetypes.
+  formatters_by_ft = {
+    go = { "gofumpt" },
+    json = { "jq" },
+    lua = { "stylua" },
+    markdown = { "injected" },
+    python = { "ruff_fix", "ruff_format", "ruff_organize_imports" },
+    sh = { "shfmt" },
+    sql = { "sqruff" },
+    vhdl = { "vsg" },
+    ["*"] = { "injected" },
+    ["_"] = { lsp_format = "prefer" },
+  },
+})
+
+-- Set formatexpr to call conforms formatexpr function. formatexpr is
+-- used by gq for formatting. To format something, do gq<motion>.
+vim.o.formatexpr = require("conform").formatexpr
+
+-- ---------------------------------------------------------------------------
+-- Plugin: nvim-lint
+-- A plugin to enable specific linters per filetype. See its
+-- documentation for available linters.
+-- See `:h lint.txt`.
+
+local lint = require("lint")
+
+-- Map linters to filetypes.
+lint.linters_by_ft = {
+  json = { "jq" },
+  sh = { "shellcheck" },
+  sql = { "sqruff" },
+  vhdl = { "ghdl", "vsg" },
+}
+
+-- Redefine args given to shellcheck. This is to make it read stdin,
+-- making it faster.
+lint.linters.shellcheck.args = { "-f", "json1", "-" }
+
+-- Append `-Wall` to ghdl.
+table.insert(lint.linters.ghdl.args, "-Wall")
+
+-- Enable linting on these events.
+vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "TextChanged" }, {
+  callback = function()
+    lint.try_lint(nil, { ignore_errors = true })
+  end,
+})
+
+-- ---------------------------------------------------------------------------
+-- Plugin: VimTeX
 
 vim.g.vimtex_view_method = "skim"
-
 vim.g.vimtex_compiler_method = "latexmk"
+vim.g.vimtex_quickfix_mode = 2
+vim.g.vimtex_mappings_enabled = 1
 
 vim.g.vimtex_compiler_latexmk = {
   build_dir = "build",
@@ -372,190 +584,25 @@ vim.g.vimtex_compiler_latexmk = {
   },
 }
 
-vim.g.vimtex_quickfix_mode = 2
-vim.g.vimtex_mappings_enabled = 1
-
-
+-- ---------------------------------------------------------------------------
+-- Plugin: blink.cmp
 
 require("blink.cmp").setup({
   keymap = {
     preset = "default",
   },
-
   appearance = {
     nerd_font_variant = "mono",
   },
-
   completion = {
     documentation = {
       auto_show = true,
     },
   },
-
   sources = {
     default = { "lsp", "path", "buffer" },
   },
-
   fuzzy = {
     implementation = "prefer_rust_with_warning",
   },
 })
-
-
-
--- Builtin plugins
--- Some builtin plugins that are shipped with nvim.
--- ==========================================
-vim.cmd.packadd({ "cfilter", bang = true })
-vim.cmd.packadd({ "nvim.undotree", bang = true })
-
--- Plugin: nvim-treesitter
--- Install up-to-date tree sitter parsers. See its documentation for available
--- parsers.
--- ==========================================
-require("nvim-treesitter").install({
-  -- Bundled parsers.
-  "c",
-  "lua",
-  "markdown",
-  "markdown_inline",
-  "query",
-  "vim",
-  "vimdoc",
-  -- Extra parsers.
-  "bash",
-  "comment",
-  "diff",
-  "git_rebase",
-  "gitcommit",
-  "go",
-  "python",
-  "sql",
-  "vhdl",
-})
-
--- Run `:TSUpdate` when the nvim-treesitter plugin is updated.
-vim.api.nvim_create_autocmd({ "PackChanged" }, {
-  callback = function(ev)
-    if ev.data.spec.name == "nvim-treesitter" and ev.data.kind == "update" then
-      vim.schedule(function()
-        vim.cmd.TSUpdate()
-      end)
-    end
-  end,
-})
-
--- Enable treesitter on supported filetypes.
-vim.api.nvim_create_autocmd("FileType", {
-  callback = function(ev)
-    if pcall(vim.treesitter.start) then
-      -- If treesitter is enabled and folding queries are installed, use the
-      -- queries for folding.
-      if vim.treesitter.query.get(ev.match, "folds") then
-        vim.wo.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-      end
-      -- If treesitter is enabled and indent queries are installed, use the
-      -- queries for indenting, overriding the smartindent option set earlier.
-      if vim.treesitter.query.get(ev.match, "indents") then
-        vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-      end
-    end
-  end,
-})
-
--- Plugin: mason.nvim
--- A package manager for editor related applications like LSPs, formatters and
--- linters.
--- ==========================================
-
-require("mason").setup()
-
--- Plugin: mason-tool-installer
--- A wrapper around mason to autoinstall packages by listing them in a table.
--- ==========================================
-
-require("mason-tool-installer").setup({
-  run_on_start = false,
-  ensure_installed = {
-    "gofumpt",
-    "gopls",
-    "lua-language-server",
-    "ruff",
-    "shellcheck",
-    "shfmt",
-    "sqruff",
-    "stylua",
-    "ty",
-    "vsg",
-  },
-})
-
--- Plugin: conform.nvim
--- Enable specific formatters per filetype. See its documentation for available
--- formatters.
--- ==========================================
-
-require("conform").setup({
-  -- Map formatters to filetypes.
-  formatters_by_ft = {
-    go = { "gofumpt" },
-    lua = { "stylua" },
-    markdown = { "injected" },
-    python = { "ruff_fix", "ruff_format", "ruff_organize_imports" },
-    sh = { "shfmt" },
-    sql = { "sqruff" },
-    vhdl = { "vsg" },
-    -- https://github.com/stevearc/conform.nvim/issues/752
-    --["*"] = { "injected" },
-  },
-})
-
--- Set formatexpr to call conforms formatexpr function. formatexpr is used by gq
--- for formatting. To format something, do gq<motion>.
-vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
-
--- Plugin: nvim-lint
--- A plugin to enable specific linters per filetype. See its documentation for
--- available linters.
--- ==========================================
-
-local lint = require("lint")
-
--- Map linters to filetypes.
-lint.linters_by_ft = {
-  sh = { "shellcheck" },
-  sql = { "sqruff" },
-  vhdl = { "ghdl", "vsg" },
-}
-
--- Redefine args given to the shellcheck linter. This is to make it read stdin,
--- making it faster.
-lint.linters.shellcheck.args = { "-f", "json1", "-" }
-
--- Append `-Wall` to the ghdl.
-table.insert(lint.linters.ghdl.args, "-Wall")
-
--- Enable the linting on these events.
-vim.api.nvim_create_autocmd({ "FileType", "BufWritePost", "TextChanged" }, {
-  callback = function()
-    lint.try_lint(nil, { ignore_errors = true })
-  end,
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

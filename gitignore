@@ -1,1 +1,12 @@
+# ~/.config/git/ignore
+
+*.d
+*.o
 .DS_Store
+._*
+.cache/
+.nvim.lua
+.nvim/
+__MACOSX
+a.out
+compile_commands.json

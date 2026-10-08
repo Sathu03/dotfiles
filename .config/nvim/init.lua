@@ -428,7 +428,7 @@ vim.pack.add({
   "https://github.com/nvim-treesitter/nvim-treesitter",
   "https://github.com/monkoose/matchparen.nvim",
   "https://github.com/stevearc/conform.nvim",
-  "https://github.com/mfussenegger/nvim-lint",
+  "https://codeberg.org/mfussenegger/nvim-lint",
   "https://github.com/lervag/vimtex",
   { src = "https://github.com/saghen/blink.cmp", version = "v1.10.2", },
 }, { confirm = false })

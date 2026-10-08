@@ -1,0 +1,26 @@
+#!/bin/sh
+# Compile and install Nvim (Alpine Linux)
+# https://github.com/neovim/neovim
+#
+# Depends:
+# curl fzf git ripgrep tree-sitter-cli
+#
+# Makedepends:
+# cmake curl gettext-dev samurai
+
+set -eu
+
+tmpdir=$(mktemp -d)
+trap 'rm -rf -- "$tmpdir"' EXIT INT TERM
+cd "$tmpdir"
+
+git clone --depth=1 https://github.com/neovim/neovim
+cd neovim
+
+cmake -B build -G Ninja \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_INSTALL_PREFIX="$HOME/.local"
+cmake --build build
+
+rm -rf ~/.local/lib/nvim ~/.local/share/nvim/runtime
+cmake --install build

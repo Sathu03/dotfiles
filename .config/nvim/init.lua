@@ -305,6 +305,9 @@ vim.keymap.set("t", "<C-w>[", "<C-\\><C-n>")
 -- Toggle the undotree window.
 vim.keymap.set("n", "<Leader>u", "<Cmd>Undotree<CR>")
 
+-- Open parent directory listing.
+vim.keymap.set("n", "-", "<Plug>(nvim-dir-up)")
+
 -- Toggle showing diagnostics in all buffers.
 vim.keymap.set("n", "<leader>d", function()
   vim.diagnostic.enable(not vim.diagnostic.is_enabled())
